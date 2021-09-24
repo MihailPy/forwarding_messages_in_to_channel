@@ -1,14 +1,15 @@
 import os
 from telethon import TelegramClient, events
 from dotenv import load_dotenv
+from telethon.sessions import StringSession
 
 load_dotenv()
 
 api_id = int(os.getenv("api_id"))
 api_hash = str(os.getenv("api_hash"))
-session = os.environ.get('TG_SESSION', 'session_name.session')
+string_session = str(os.getenv("string_session"))
 
-client = TelegramClient(session, api_id, api_hash)
+client = TelegramClient(StringSession(string_session), api_id, api_hash)
 
 my_channel = int(os.getenv("my_channel"))
 sources_of_messages = list(map(int, os.getenv("sources_of_messages").split(",")))
