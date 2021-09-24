@@ -1,16 +1,27 @@
-# This is a sample Python script.
+import os
+from telethon import TelegramClient, events
+from dotenv import load_dotenv
 
-# Press ⌃R to execute it or replace it with your code.
-# Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
+load_dotenv()
+
+api_id = int(os.getenv("api_id"))
+api_hash = str(os.getenv("api_hash"))
+session = os.environ.get('TG_SESSION', 'session_name.session')
+
+client = TelegramClient(session, api_id, api_hash)
+
+my_channel = int(os.getenv("my_channel"))
+sources_of_messages = list(map(int, os.getenv("sources_of_messages").split(",")))
 
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press ⌘F8 to toggle the breakpoint.
+@client.on(events.NewMessage(chats=sources_of_messages))
+async def handler(event):
+    print("New message")
+    await event.message.forward_to(my_channel)
 
 
-# Press the green button in the gutter to run the script.
+client.start()
+
 if __name__ == '__main__':
-    print_hi('PyCharm')
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    print("Starting")
+    client.run_until_disconnected()
