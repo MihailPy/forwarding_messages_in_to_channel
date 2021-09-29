@@ -24,12 +24,14 @@ sources_of_messages2 = list(map(int, os.getenv("sources_of_messages2").split(","
 async def handler1(event):
     print("New message")
     await event.message.forward_to(my_channel1)
+    await client1.send_read_acknowledge(event.message.peer_id, event.message)
 
 
 @client2.on(events.NewMessage(chats=sources_of_messages2))
 async def handler2(event):
     print("New message")
     await event.message.forward_to(my_channel2)
+    await client2.send_read_acknowledge(event.message.peer_id, event.message)
 
 
 client1.start()
