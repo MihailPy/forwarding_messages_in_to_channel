@@ -1,57 +1,28 @@
-import os
-from dataclasses import dataclass
 from telethon import TelegramClient, events
-from dotenv import load_dotenv
 from telethon.sessions import StringSession
 
-load_dotenv()
+from config import accounts
+
+clients = []
 
 
-@dataclass
-class AccountConfig:
-    api_id: int
-    api_hash: str
-    string_session: str
-    target_channel: int
-    sources: list[int]
+for account in accounts:
+    client = TelegramClient(
+        StringSession(account.string_session),
+        account.api_id,
+        account.api_hash,
+    )
+
+    @client.on(events.NewMessage(chats=account.sources))
+    async def handler(event, target=account.target_channel):
+        print("New message")
+        await event.message.forward_to(target)
+
+    clients.append(client)
 
 
-accounts = [
-    AccountConfig.from_env("1"),
-    AccountConfig.from_env("2"),
-]
+for client in clients:
+    client.start()
 
-api_id1 = int(os.getenv("api_id1"))
-api_hash1 = str(os.getenv("api_hash1"))
-string_session1 = str(os.getenv("string_session1"))
-client1 = TelegramClient(StringSession(string_session1), api_id1, api_hash1)
-my_channel1 = int(os.getenv("my_channel1"))
-sources_of_messages1 = list(map(int, os.getenv("sources_of_messages1").split(",")))
-
-api_id2 = int(os.getenv("api_id2"))
-api_hash2 = str(os.getenv("api_hash2"))
-string_session2 = str(os.getenv("string_session2"))
-client2 = TelegramClient(StringSession(string_session2), api_id2, api_hash2)
-my_channel2 = int(os.getenv("my_channel2"))
-sources_of_messages2 = list(map(int, os.getenv("sources_of_messages2").split(",")))
-
-
-@client1.on(events.NewMessage(chats=sources_of_messages1))
-async def handler1(event):
-    print("New message")
-    await event.message.forward_to(my_channel1)
-
-
-@client2.on(events.NewMessage(chats=sources_of_messages2))
-async def handler2(event):
-    print("New message")
-    await event.message.forward_to(my_channel2)
-
-
-client1.start()
-client2.start()
-
-if __name__ == "__main__":
-    print("Starting")
-    client1.run_until_disconnected()
-    client2.run_until_disconnected()
+for client in clients:
+    client.run_until_disconnected()
