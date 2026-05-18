@@ -2,6 +2,7 @@ from telethon import TelegramClient
 from telethon.errors import RPCError
 
 from models.account import AccountConfig
+from utils import logger
 
 
 async def validate_account(
@@ -16,7 +17,7 @@ async def validate_account(
     if me is None:
         raise RuntimeError("Telegram account is not authorized")
 
-    print(f"Account authorized: {me.id}")
+    logger.info(f"Account authorized: {me.id}")
 
     await validate_sources(client, account.sources)
     await validate_target_channel(client, account.target_channel)
@@ -34,7 +35,7 @@ async def validate_sources(
                 f"Source chat/channel is not available: {source}"
             ) from exc
 
-        print(f"Source available: {source} ({entity.__class__.__name__})")
+        logger.info(f"Source available: {source} ({entity.__class__.__name__})")
 
 
 async def validate_target_channel(
@@ -48,4 +49,4 @@ async def validate_target_channel(
             f"Target channel is not available: {target_channel}"
         ) from exc
 
-    print(f"Target available: {target_channel} ({entity.__class__.__name__})")
+    logger.info(f"Target available: {target_channel} ({entity.__class__.__name__})")

@@ -6,6 +6,9 @@ from telethon.sessions import StringSession
 
 from config import accounts
 from services.validation import validate_account
+from utils.logger import setup_logger
+
+logger = setup_logger()
 
 
 async def main() -> None:
@@ -23,12 +26,12 @@ async def main() -> None:
 
         @client.on(events.NewMessage(chats=account.sources))
         async def handler(event: Any, target: int = account.target_channel) -> None:
-            print("New message")
+            logger.info("New message received")
             await event.message.forward_to(target)
 
         clients.append(client)
 
-    print("Starting")
+    logger.info("Starting")
 
     await asyncio.gather(*(client.run_until_disconnected() for client in clients))
 
