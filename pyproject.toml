@@ -1,0 +1,10 @@
+[project]
+name = "forwarding-messages-in-to-channel"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "python-dotenv>=1.0,<2.0",
+    "telethon>=1.41,<2.0",
+]

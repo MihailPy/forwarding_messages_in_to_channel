@@ -1,9 +1,25 @@
 import os
+from dataclasses import dataclass
 from telethon import TelegramClient, events
 from dotenv import load_dotenv
 from telethon.sessions import StringSession
 
 load_dotenv()
+
+
+@dataclass
+class AccountConfig:
+    api_id: int
+    api_hash: str
+    string_session: str
+    target_channel: int
+    sources: list[int]
+
+
+accounts = [
+    AccountConfig.from_env("1"),
+    AccountConfig.from_env("2"),
+]
 
 api_id1 = int(os.getenv("api_id1"))
 api_hash1 = str(os.getenv("api_hash1"))
@@ -35,7 +51,7 @@ async def handler2(event):
 client1.start()
 client2.start()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print("Starting")
     client1.run_until_disconnected()
     client2.run_until_disconnected()
