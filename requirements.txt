@@ -1,2 +1,4 @@
 Telethon>=1.41,<2.0
 python-dotenv>=1.0,<2.0
+typer>=0.12,<1.0
+rich>=13.0,<15.0
