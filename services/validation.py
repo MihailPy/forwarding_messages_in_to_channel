@@ -2,7 +2,7 @@ from telethon import TelegramClient
 from telethon.errors import RPCError
 
 from models.account import AccountConfig
-from utils import logger
+from utils.logger import logger
 
 
 async def validate_account(

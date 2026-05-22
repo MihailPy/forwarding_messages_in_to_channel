@@ -5,19 +5,21 @@
       "api_id_env": "API_ID_1",
       "api_hash_env": "API_HASH_1",
       "string_session_env": "STRING_SESSION_1",
-      "target_channel": 1429694775,
+      "target_channel": -1003605928444,
       "sources": [
-        -1001111111111,
-        -1002222222222
+        -1001720026717
       ]
     },
     {
       "name": "account_2",
-      "api_id_env": "2663573",
-      "api_hash_env": "f27f131456fca6683b352ac1d779ce9a",
-      "string_session_env": "ACCOUNT_1_STRING_SESSION",
-      "target_channel": -1001234567890,
-      "sources": []
+      "api_id_env": "ACCOUNT_2_API_ID",
+      "api_hash_env": "ACCOUNT_2_API_HASH",
+      "string_session_env": "ACCOUNT_2_STRING_SESSION",
+      "target_channel": -1002134954545,
+      "sources": [
+        -1003211872063,
+        -1001427992105
+      ]
     }
   ]
 }

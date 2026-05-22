@@ -8,3 +8,6 @@ def setup_logger() -> logging.Logger:
     )
 
     return logging.getLogger("telegram_forwarder")
+
+
+logger = setup_logger()

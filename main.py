@@ -6,9 +6,7 @@ from telethon.sessions import StringSession
 
 from config import accounts
 from services.validation import validate_account
-from utils.logger import setup_logger
-
-logger = setup_logger()
+from utils.logger import logger
 
 
 async def main() -> None:

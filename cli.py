@@ -7,8 +7,8 @@ import typer
 from dotenv import load_dotenv, set_key
 from rich.console import Console
 from rich.table import Table
-from telethon.sync import TelegramClient
 from telethon.sessions import StringSession
+from telethon.sync import TelegramClient
 
 app = typer.Typer(help="Manage Telegram forwarding accounts")
 console = Console()
@@ -38,54 +38,46 @@ def find_account(config: dict[str, Any], name: str) -> dict[str, Any]:
     raise typer.BadParameter(f"Account not found: {name}")
 
 
-def get_required_env(name: str) -> str:
-    value = os.getenv(name)
-
-    if value is None or value.strip() == "":
-        raise typer.BadParameter(f"Environment variable is missing: {name}")
-
-    return value
+def normalize_env_name(name: str, suffix: str) -> str:
+    safe_name = name.upper().replace("-", "_")
+    return f"{safe_name}_{suffix}"
 
 
-@app.command("list")
-def list_accounts() -> None:
-    config = load_config()
+def mask_secret(value: str | None) -> str:
+    if not value:
+        return "[red]missing[/red]"
 
-    table = Table(title="Forwarding accounts")
-    table.add_column("Name")
-    table.add_column("API ID env")
-    table.add_column("API Hash env")
-    table.add_column("Session env")
-    table.add_column("Target")
-    table.add_column("Sources")
+    if len(value) <= 10:
+        return "***"
 
-    for account in config["accounts"]:
-        table.add_row(
-            account["name"],
-            account["api_id_env"],
-            account["api_hash_env"],
-            account["string_session_env"],
-            str(account["target_channel"]),
-            "\n".join(str(source) for source in account["sources"]) or "-",
-        )
+    return f"{value[:4]}...{value[-4:]}"
 
-    console.print(table)
+
+def get_env_value(name: str) -> str | None:
+    load_dotenv()
+    return os.getenv(name)
 
 
 @app.command("add-account")
-def add_account(
-    name: str,
-    api_id_env: str = typer.Option(..., help="Env variable name for API ID"),
-    api_hash_env: str = typer.Option(..., help="Env variable name for API hash"),
-    string_session_env: str = typer.Option(
-        ..., help="Env variable name for StringSession"
-    ),
-    target: int = typer.Option(..., help="Target channel ID"),
-) -> None:
+def add_account() -> None:
     config = load_config()
+
+    name = typer.prompt("Account name")
 
     if any(account["name"] == name for account in config["accounts"]):
         raise typer.BadParameter(f"Account already exists: {name}")
+
+    api_id = typer.prompt("API ID", type=int)
+    api_hash = typer.prompt("API Hash", hide_input=True)
+    target_channel = typer.prompt("Target channel ID", type=int)
+
+    api_id_env = normalize_env_name(name, "API_ID")
+    api_hash_env = normalize_env_name(name, "API_HASH")
+    string_session_env = normalize_env_name(name, "STRING_SESSION")
+
+    ENV_PATH.touch(exist_ok=True)
+    set_key(str(ENV_PATH), api_id_env, str(api_id))
+    set_key(str(ENV_PATH), api_hash_env, api_hash)
 
     config["accounts"].append(
         {
@@ -93,27 +85,87 @@ def add_account(
             "api_id_env": api_id_env,
             "api_hash_env": api_hash_env,
             "string_session_env": string_session_env,
-            "target_channel": target,
+            "target_channel": target_channel,
             "sources": [],
         }
     )
 
     save_config(config)
+
     console.print(f"[green]Added account:[/green] {name}")
+    console.print(f"[green]Saved secrets to .env:[/green] {api_id_env}, {api_hash_env}")
+    console.print()
+    console.print("Now run:")
+    console.print(f"[bold]python cli.py login {name} --save[/bold]")
 
 
-@app.command("remove-account")
-def remove_account(name: str) -> None:
+@app.command("login")
+def login(
+    name: str,
+    save: bool = typer.Option(False, "--save", help="Save string session to .env"),
+) -> None:
+    load_dotenv()
+
     config = load_config()
+    account = find_account(config, name)
 
-    accounts = config["accounts"]
-    config["accounts"] = [account for account in accounts if account["name"] != name]
+    api_id_raw = os.getenv(account["api_id_env"])
+    api_hash = os.getenv(account["api_hash_env"])
 
-    if len(config["accounts"]) == len(accounts):
-        raise typer.BadParameter(f"Account not found: {name}")
+    if api_id_raw is None:
+        raise typer.BadParameter(f"Missing env variable: {account['api_id_env']}")
 
-    save_config(config)
-    console.print(f"[green]Removed account:[/green] {name}")
+    if api_hash is None:
+        raise typer.BadParameter(f"Missing env variable: {account['api_hash_env']}")
+
+    api_id = int(api_id_raw)
+
+    with TelegramClient(StringSession(), api_id, api_hash) as client:
+        string_session = client.session.save()
+
+    if string_session is None:
+        raise typer.BadParameter("Failed to create string session")
+
+    if save:
+        ENV_PATH.touch(exist_ok=True)
+        set_key(str(ENV_PATH), account["string_session_env"], string_session)
+        console.print(
+            f"[green]Saved string session to .env:[/green] "
+            f"{account['string_session_env']}"
+        )
+    else:
+        console.print("[yellow]String session:[/yellow]")
+        console.print(string_session)
+
+
+@app.command("list")
+def list_accounts() -> None:
+    config = load_config()
+    load_dotenv()
+
+    table = Table(title="Forwarding accounts")
+    table.add_column("Name")
+    table.add_column("API ID")
+    table.add_column("API Hash")
+    table.add_column("String Session")
+    table.add_column("Target")
+    table.add_column("Sources")
+
+    for account in config["accounts"]:
+        api_id_env = account["api_id_env"]
+        api_hash_env = account["api_hash_env"]
+        session_env = account["string_session_env"]
+
+        table.add_row(
+            account["name"],
+            f"{mask_secret(get_env_value(api_id_env))}",
+            f"{mask_secret(get_env_value(api_hash_env))}",
+            f"{mask_secret(get_env_value(session_env))}",
+            str(account["target_channel"]),
+            "\n".join(str(source) for source in account["sources"]) or "-",
+        )
+
+    console.print(table)
 
 
 @app.command("add-source")
@@ -157,36 +209,22 @@ def set_target(name: str, target: int) -> None:
     console.print(f"[green]Updated target for[/green] {name}: {target}")
 
 
-@app.command("login")
-def login(
-    name: str,
-    save: bool = typer.Option(False, "--save", help="Save string session to .env"),
-) -> None:
-    load_dotenv()
-
+@app.command("remove-account")
+def remove_account(name: str) -> None:
     config = load_config()
-    account = find_account(config, name)
 
-    api_id = int(get_required_env(account["api_id_env"]))
-    api_hash = get_required_env(account["api_hash_env"])
-    session_env = account["string_session_env"]
+    before = len(config["accounts"])
+    config["accounts"] = [
+        account for account in config["accounts"] if account["name"] != name
+    ]
 
-    with TelegramClient(StringSession(), api_id, api_hash) as client:
-        string_session = client.session.save()
+    if len(config["accounts"]) == before:
+        raise typer.BadParameter(f"Account not found: {name}")
 
-    if string_session is None:
-        raise typer.BadParameter("Failed to create string session")
+    save_config(config)
 
-    if save:
-        ENV_PATH.touch(exist_ok=True)
-        set_key(str(ENV_PATH), session_env, string_session)
-        console.print(f"[green]Saved string session to .env:[/green] {session_env}")
-    else:
-        console.print("[yellow]String session:[/yellow]")
-        console.print(string_session)
-        console.print()
-        console.print("Add it to .env as:")
-        console.print(f"{session_env}={string_session}")
+    console.print(f"[green]Removed account from accounts.json:[/green] {name}")
+    console.print("[yellow]Note:[/yellow] related values in .env were not removed")
 
 
 if __name__ == "__main__":
