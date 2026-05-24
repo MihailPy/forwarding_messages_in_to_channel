@@ -5,7 +5,7 @@
       "api_id_env": "API_ID_1",
       "api_hash_env": "API_HASH_1",
       "string_session_env": "STRING_SESSION_1",
-      "target_channel": -1003605928444,
+      "target_channel": "@channelfortestloxi",
       "sources": [
         -1001720026717
       ]

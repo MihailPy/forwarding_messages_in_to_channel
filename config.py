@@ -48,6 +48,18 @@ def load_json_config() -> dict[str, Any]:
     return data
 
 
+def parse_channel_ref(value: object, field_name: str, account_name: str) -> int | str:
+    if isinstance(value, int):
+        return value
+
+    if isinstance(value, str) and value.strip():
+        return value.strip()
+
+    raise RuntimeError(
+        f"{field_name} must be int or non-empty string for account: {account_name}"
+    )
+
+
 def parse_account(raw_account: dict[str, Any]) -> AccountConfig:
     name = str(raw_account.get("name", "unknown"))
 
@@ -67,7 +79,7 @@ def parse_account(raw_account: dict[str, Any]) -> AccountConfig:
     target_channel = raw_account.get("target_channel")
     sources = raw_account.get("sources")
 
-    if not isinstance(target_channel, int):
+    if not isinstance(target_channel, int | str):
         raise RuntimeError(f"target_channel must be an integer for account: {name}")
 
     if not isinstance(sources, list):
@@ -91,12 +103,25 @@ def parse_account(raw_account: dict[str, Any]) -> AccountConfig:
         string_session_env,
     )
 
+    target_channel = parse_channel_ref(
+        raw_account.get("target_channel"),
+        "target_channel",
+        name,
+    )
+
+    sources_raw = raw_account.get("sources")
+
+    if not isinstance(sources_raw, list):
+        raise RuntimeError(f"sources must be a list for account: {name}")
+
+    sources = [parse_channel_ref(source, "source", name) for source in sources_raw]
+
     return AccountConfig(
         api_id=get_required_int_env(api_id_env),
         api_hash=get_required_env(api_hash_env),
         string_session=string_session,
         target_channel=target_channel,
-        sources=parsed_sources,
+        sources=sources_raw,
     )
 
 

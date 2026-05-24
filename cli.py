@@ -1,14 +1,18 @@
+import asyncio
 import json
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import typer
 from dotenv import load_dotenv, set_key
 from rich.console import Console
 from rich.table import Table
+from telethon import TelegramClient
 from telethon.sessions import StringSession
-from telethon.sync import TelegramClient
+
+from config import load_accounts
+from services.validation import validate_account
 
 app = typer.Typer(help="Manage Telegram forwarding accounts")
 console = Console()
@@ -58,6 +62,15 @@ def get_env_value(name: str) -> str | None:
     return os.getenv(name)
 
 
+def parse_channel_input(value: str) -> int | str:
+    value = value.strip()
+
+    try:
+        return int(value)
+    except ValueError:
+        return value
+
+
 @app.command("add-account")
 def add_account() -> None:
     config = load_config()
@@ -69,7 +82,8 @@ def add_account() -> None:
 
     api_id = typer.prompt("API ID", type=int)
     api_hash = typer.prompt("API Hash", hide_input=True)
-    target_channel = typer.prompt("Target channel ID", type=int)
+    target_channel_raw = typer.prompt("Target channel ID, @username or link")
+    target_channel = parse_channel_input(target_channel_raw)
 
     api_id_env = normalize_env_name(name, "API_ID")
     api_hash_env = normalize_env_name(name, "API_HASH")
@@ -169,44 +183,54 @@ def list_accounts() -> None:
 
 
 @app.command("add-source")
-def add_source(name: str, source: int) -> None:
+def add_source(name: str, source: str) -> None:
     config = load_config()
     account = find_account(config, name)
 
-    if source in account["sources"]:
-        console.print(f"[yellow]Source already exists:[/yellow] {source}")
+    parsed_source = parse_channel_input(source)
+
+    if parsed_source in account["sources"]:
+        console.print(f"[yellow]Source already exists:[/yellow] {parsed_source}")
         return
 
-    account["sources"].append(source)
+    account["sources"].append(parsed_source)
     save_config(config)
 
-    console.print(f"[green]Added source[/green] {source} [green]to[/green] {name}")
+    console.print(
+        f"[green]Added source[/green] {parsed_source} [green]to[/green] {name}"
+    )
 
 
 @app.command("remove-source")
-def remove_source(name: str, source: int) -> None:
+def remove_source(name: str, source: str) -> None:
     config = load_config()
     account = find_account(config, name)
 
-    if source not in account["sources"]:
-        console.print(f"[yellow]Source not found:[/yellow] {source}")
+    parsed_source = parse_channel_input(source)
+
+    if parsed_source not in account["sources"]:
+        console.print(f"[yellow]Source not found:[/yellow] {parsed_source}")
         return
 
-    account["sources"].remove(source)
+    account["sources"].remove(parsed_source)
     save_config(config)
 
-    console.print(f"[green]Removed source[/green] {source} [green]from[/green] {name}")
+    console.print(
+        f"[green]Removed source[/green] {parsed_source} [green]from[/green] {name}"
+    )
 
 
 @app.command("set-target")
-def set_target(name: str, target: int) -> None:
+def set_target(name: str, target: str) -> None:
     config = load_config()
     account = find_account(config, name)
 
-    account["target_channel"] = target
+    parsed_target = parse_channel_input(target)
+
+    account["target_channel"] = parsed_target
     save_config(config)
 
-    console.print(f"[green]Updated target for[/green] {name}: {target}")
+    console.print(f"[green]Updated target for[/green] {name}: {parsed_target}")
 
 
 @app.command("remove-account")
@@ -225,6 +249,29 @@ def remove_account(name: str) -> None:
 
     console.print(f"[green]Removed account from accounts.json:[/green] {name}")
     console.print("[yellow]Note:[/yellow] related values in .env were not removed")
+
+
+@app.command("check")
+def check_config() -> None:
+    asyncio.run(run_check())
+
+
+async def run_check() -> None:
+    accounts = load_accounts()
+
+    for account in accounts:
+        client = TelegramClient(
+            StringSession(account.string_session),
+            account.api_id,
+            account.api_hash,
+        )
+
+        try:
+            await cast(Any, client.start())
+            await validate_account(client, account)
+            console.print("[green]OK[/green]")
+        finally:
+            await cast(Any, client.disconnect())
 
 
 if __name__ == "__main__":
