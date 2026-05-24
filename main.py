@@ -1,37 +1,19 @@
 import asyncio
-from typing import Any
-
-from telethon import TelegramClient, events
-from telethon.sessions import StringSession
+from typing import Any, cast
 
 from config import accounts
-from services.validation import validate_account
+from services.forwarder import create_forwarding_client
 from utils.logger import logger
 
 
 async def main() -> None:
-    clients: list[TelegramClient] = []
+    clients = [await create_forwarding_client(account) for account in accounts]
 
-    for account in accounts:
-        client = TelegramClient(
-            StringSession(account.string_session),
-            account.api_id,
-            account.api_hash,
-        )
+    logger.info("Forwarding started")
 
-        await client.start()
-        await validate_account(client, account)
-
-        @client.on(events.NewMessage(chats=account.sources))
-        async def handler(event: Any, target: int = account.target_channel) -> None:
-            logger.info("New message received")
-            await event.message.forward_to(target)
-
-        clients.append(client)
-
-    logger.info("Starting")
-
-    await asyncio.gather(*(client.run_until_disconnected() for client in clients))
+    await asyncio.gather(
+        *(cast(Any, client.run_until_disconnected()) for client in clients)
+    )
 
 
 if __name__ == "__main__":
