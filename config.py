@@ -86,10 +86,15 @@ def parse_account(raw_account: dict[str, Any]) -> AccountConfig:
     if not parsed_sources:
         raise RuntimeError(f"Sources list must not be empty for account: {name}")
 
+    string_session = validate_string_session(
+        get_required_env(string_session_env),
+        string_session_env,
+    )
+
     return AccountConfig(
         api_id=get_required_int_env(api_id_env),
         api_hash=get_required_env(api_hash_env),
-        string_session=get_required_env(string_session_env),
+        string_session=string_session,
         target_channel=target_channel,
         sources=parsed_sources,
     )
@@ -99,6 +104,26 @@ def load_accounts() -> list[AccountConfig]:
     config = load_json_config()
 
     return [parse_account(account) for account in config["accounts"]]
+
+
+def validate_string_session(value: str, env_name: str) -> str:
+    invalid_values = {
+        "your_string_session",
+        "your_session",
+        "string_session",
+        "ВАША_СЕССИЯ",
+    }
+
+    if value.strip() in invalid_values:
+        raise RuntimeError(f"Invalid placeholder string session in {env_name}")
+
+    if len(value.strip()) < 100:
+        raise RuntimeError(
+            f"String session in {env_name} looks invalid or too short. "
+            f"Run: python cli.py login <account_name> --save"
+        )
+
+    return value.strip()
 
 
 accounts = load_accounts()

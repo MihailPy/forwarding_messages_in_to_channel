@@ -158,9 +158,9 @@ def list_accounts() -> None:
 
         table.add_row(
             account["name"],
-            f"{mask_secret(get_env_value(api_id_env))}",
-            f"{mask_secret(get_env_value(api_hash_env))}",
-            f"{mask_secret(get_env_value(session_env))}",
+            f"{api_id_env}: {mask_secret(get_env_value(api_id_env))}",
+            f"{api_hash_env}: {mask_secret(get_env_value(api_hash_env))}",
+            f"{session_env}: {mask_secret(get_env_value(session_env))}",
             str(account["target_channel"]),
             "\n".join(str(source) for source in account["sources"]) or "-",
         )
