@@ -1,12 +1,13 @@
 import asyncio
 from typing import Any, cast
 
-from config import accounts
+from config import load_accounts
 from services.forwarder import create_forwarding_client
 from utils.logger import logger
 
 
 async def main() -> None:
+    accounts = load_accounts()
     clients = [await create_forwarding_client(account) for account in accounts]
 
     logger.info("Forwarding started")

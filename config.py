@@ -76,32 +76,10 @@ def parse_account(raw_account: dict[str, Any]) -> AccountConfig:
     if not string_session_env:
         raise RuntimeError(f"Missing string_session_env for account: {name}")
 
-    target_channel = raw_account.get("target_channel")
-    sources = raw_account.get("sources")
+    sources_raw = raw_account.get("sources")
 
-    if not isinstance(target_channel, int | str):
-        raise RuntimeError(f"target_channel must be an integer for account: {name}")
-
-    if not isinstance(sources, list):
+    if not isinstance(sources_raw, list):
         raise RuntimeError(f"sources must be a list for account: {name}")
-
-    parsed_sources: list[int] = []
-
-    for source in sources:
-        if not isinstance(source, int):
-            raise RuntimeError(
-                f"Source channel id must be an integer for account {name}: {source}"
-            )
-
-        parsed_sources.append(source)
-
-    if not parsed_sources:
-        raise RuntimeError(f"Sources list must not be empty for account: {name}")
-
-    string_session = validate_string_session(
-        get_required_env(string_session_env),
-        string_session_env,
-    )
 
     target_channel = parse_channel_ref(
         raw_account.get("target_channel"),
@@ -109,19 +87,22 @@ def parse_account(raw_account: dict[str, Any]) -> AccountConfig:
         name,
     )
 
-    sources_raw = raw_account.get("sources")
-
-    if not isinstance(sources_raw, list):
-        raise RuntimeError(f"sources must be a list for account: {name}")
-
     sources = [parse_channel_ref(source, "source", name) for source in sources_raw]
+
+    if not sources:
+        raise RuntimeError(f"Sources list must not be empty for account: {name}")
+
+    string_session = validate_string_session(
+        get_required_env(string_session_env),
+        string_session_env,
+    )
 
     return AccountConfig(
         api_id=get_required_int_env(api_id_env),
         api_hash=get_required_env(api_hash_env),
         string_session=string_session,
         target_channel=target_channel,
-        sources=sources_raw,
+        sources=sources,
     )
 
 
