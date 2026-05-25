@@ -130,6 +130,3 @@ def validate_string_session(value: str, env_name: str) -> str:
         )
 
     return value.strip()
-
-
-accounts = load_accounts()
