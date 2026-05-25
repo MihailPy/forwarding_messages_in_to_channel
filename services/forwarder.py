@@ -1,12 +1,12 @@
 from typing import Any, cast
 
 from telethon import TelegramClient, events
+from telethon.errors import RPCError
 from telethon.sessions import StringSession
 
 from models.account import AccountConfig
 from services.validation import validate_account
 from utils.logger import logger
-from telethon.errors import RPCError
 
 
 async def create_forwarding_client(account: AccountConfig) -> TelegramClient:

@@ -1,12 +1,31 @@
 [project]
-name = "forwarding-messages-in-to-channel"
+name = "telegram-forwarder"
 version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
-requires-python = ">=3.13"
+description = "Telegram message forwarding tool with multi-account support"
+requires-python = ">=3.11"
 dependencies = [
-    "python-dotenv>=1.0,<2.0",
-    "rich>=13.0,<15.0",
-    "telethon>=1.41,<2.0",
-    "typer>=0.12,<1.0",
+  "Telethon>=1.41,<2.0",
+  "python-dotenv>=1.0,<2.0",
+  "typer>=0.12,<1.0",
+  "rich>=13.0,<15.0",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = []
+
+[tool.pyright]
+pythonVersion = "3.11"
+typeCheckingMode = "standard"
+include = ["."]
+exclude = [".venv", "__pycache__"]
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.409",
+    "ruff>=0.15.14",
 ]
