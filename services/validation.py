@@ -1,5 +1,8 @@
+from typing import cast
+
 from telethon import TelegramClient
 from telethon.errors import RPCError
+from telethon.tl.types import TypeInputPeer
 
 from models.account import AccountConfig, ChannelRef
 from utils.logger import logger
@@ -17,7 +20,8 @@ async def validate_account(
     if me is None:
         raise RuntimeError("Telegram account is not authorized")
 
-    logger.info(f"Account authorized: {me.id}")
+    user_id = getattr(me, "id", "unknown")
+    logger.info(f"Account authorized: {user_id}")
 
     await validate_sources(client, account.sources)
     await validate_target_channel(client, account.target_channel)
@@ -44,12 +48,19 @@ async def validate_target_channel(
     target_channel: ChannelRef,
 ) -> None:
     try:
-        entity = await client.get_entity(target_channel)
+        entity = await client.get_input_entity(target_channel)
+        permissions = await client.get_permissions(
+            cast(TypeInputPeer, entity),
+            "me",
+        )
     except (RPCError, ValueError) as exc:
         raise RuntimeError(
-            f"Target channel is not available: {target_channel}. "
-            "Check that ID is correct, account has access, "
-            "and channel ID uses -100 prefix for channels."
+            f"Target channel is not available: {target_channel}"
         ) from exc
 
-    logger.info(f"Target available: {target_channel} ({entity.__class__.__name__})")
+    if getattr(permissions, "send_messages", None) is False:
+        raise RuntimeError(
+            f"Account has no permission to send messages to target: {target_channel}"
+        )
+
+    logger.info(f"Target available: {target_channel}")
