@@ -6,6 +6,7 @@ from telethon.sessions import StringSession
 from models.account import AccountConfig
 from services.validation import validate_account
 from utils.logger import logger
+from telethon.errors import RPCError
 
 
 async def create_forwarding_client(account: AccountConfig) -> TelegramClient:
@@ -31,5 +32,19 @@ def register_forwarding_handler(
 
     @client.on(events.NewMessage(chats=account.sources))
     async def handler(event: Any) -> None:
-        logger.info("New message received")
-        await event.message.forward_to(target_channel)
+        try:
+            logger.info("New message received")
+            await event.message.forward_to(target_channel)
+            logger.info("Message forwarded")
+        except RPCError as exc:
+            logger.exception(
+                "Failed to forward message to target %s",
+                target_channel,
+                exc_info=exc,
+            )
+        except Exception as exc:
+            logger.exception(
+                "Unexpected error while forwarding message to target %s",
+                target_channel,
+                exc_info=exc,
+            )
