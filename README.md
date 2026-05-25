@@ -40,6 +40,12 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
+1. Подготовить `accounts.json`:
+
+```bash
+cp accounts.example.json accounts.json
+```
+
 ## Как настроить
 
 Конфиг хранится в двух местах:
