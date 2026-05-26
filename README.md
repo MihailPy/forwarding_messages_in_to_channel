@@ -116,6 +116,25 @@ python main.py
 
 Процесс поднимет клиента(ов) и будет слушать новые сообщения до остановки.
 
+## Quality checks
+
+```bash
+uv run ruff check .
+uv run pyright
+uv run pytest
+```
+
+## Makefile
+
+Для удобства те же проверки вынесены в `Makefile`:
+
+```bash
+make lint
+make typecheck
+make test
+make check
+```
+
 ## Архитектура
 
 Текущая структура:
