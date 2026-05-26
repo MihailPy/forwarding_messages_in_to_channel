@@ -1,5 +1,4 @@
 import asyncio
-import json
 import os
 from pathlib import Path
 from typing import Any, cast
@@ -12,6 +11,12 @@ from telethon import TelegramClient
 from telethon.sessions import StringSession
 
 from config import load_accounts
+from services.config_storage import (
+    find_account,
+    load_config,
+    parse_channel_input,
+    save_config,
+)
 from services.validation import validate_account
 
 app = typer.Typer(help="Manage Telegram forwarding accounts")
@@ -19,27 +24,6 @@ console = Console()
 
 CONFIG_PATH = Path("accounts.json")
 ENV_PATH = Path(".env")
-
-
-def load_config() -> dict[str, Any]:
-    if not CONFIG_PATH.exists():
-        return {"accounts": []}
-
-    with CONFIG_PATH.open("r", encoding="utf-8") as file:
-        return json.load(file)
-
-
-def save_config(config: dict[str, Any]) -> None:
-    with CONFIG_PATH.open("w", encoding="utf-8") as file:
-        json.dump(config, file, indent=2, ensure_ascii=False)
-
-
-def find_account(config: dict[str, Any], name: str) -> dict[str, Any]:
-    for account in config["accounts"]:
-        if account["name"] == name:
-            return account
-
-    raise typer.BadParameter(f"Account not found: {name}")
 
 
 def normalize_env_name(name: str, suffix: str) -> str:
@@ -60,15 +44,6 @@ def mask_secret(value: str | None) -> str:
 def get_env_value(name: str) -> str | None:
     load_dotenv()
     return os.getenv(name)
-
-
-def parse_channel_input(value: str) -> int | str:
-    value = value.strip()
-
-    try:
-        return int(value)
-    except ValueError:
-        return value
 
 
 @app.command("add-account")
@@ -121,7 +96,10 @@ def login(
     load_dotenv()
 
     config = load_config()
-    account = find_account(config, name)
+    try:
+        account = find_account(config, name)
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
 
     api_id_raw = os.getenv(account["api_id_env"])
     api_hash = os.getenv(account["api_hash_env"])
@@ -185,7 +163,10 @@ def list_accounts() -> None:
 @app.command("add-source")
 def add_source(name: str, source: str) -> None:
     config = load_config()
-    account = find_account(config, name)
+    try:
+        account = find_account(config, name)
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
 
     parsed_source = parse_channel_input(source)
 
@@ -204,7 +185,10 @@ def add_source(name: str, source: str) -> None:
 @app.command("remove-source")
 def remove_source(name: str, source: str) -> None:
     config = load_config()
-    account = find_account(config, name)
+    try:
+        account = find_account(config, name)
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
 
     parsed_source = parse_channel_input(source)
 
@@ -223,7 +207,10 @@ def remove_source(name: str, source: str) -> None:
 @app.command("set-target")
 def set_target(name: str, target: str) -> None:
     config = load_config()
-    account = find_account(config, name)
+    try:
+        account = find_account(config, name)
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
 
     parsed_target = parse_channel_input(target)
 
