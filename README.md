@@ -11,6 +11,7 @@
 - Python
 - Telethon
 - Typer CLI
+- Pytest
 
 ## Как установить
 
@@ -135,6 +136,16 @@ make test
 make check
 ```
 
+## Тесты
+
+Тесты лежат в `tests/` и запускаются через `pytest`.
+
+Покрыты:
+
+- поиск аккаунтов в конфиге через `services/config_storage.py`
+- нормализация ввода каналов и чатов
+- базовая валидация `accounts.json` и `STRING_SESSION` в `config.py`
+
 ## Архитектура
 
 Текущая структура:
@@ -148,18 +159,23 @@ make check
 ├── models/
 │   └── account.py           # Модель AccountConfig
 ├── services/
+│   ├── config_storage.py    # Чтение/запись accounts.json для CLI
 │   ├── forwarder.py         # Логика пересылки сообщений
 │   └── validation.py        # Проверка прав, источников, целей
+├── tests/
+│   ├── test_config.py          # Тесты загрузки и валидации конфига
+│   └── test_config_storage.py  # Тесты CLI-хранилища accounts.json
 └── utils/
     └── logger.py            # Логирование
 ```
 
 Поток выполнения:
 
-1. `config.py` загружает аккаунты и секреты.
-2. `main.py` создаёт Telethon-клиенты для всех аккаунтов.
-3. `services/forwarder.py` подписывается на `NewMessage` из `sources`.
-4. Новые сообщения пересылаются в `target_channel`.
+1. `services/config_storage.py` читает и обновляет `accounts.json` для CLI-команд.
+2. `config.py` загружает аккаунты и секреты для запуска приложения.
+3. `main.py` создаёт Telethon-клиенты для всех аккаунтов.
+4. `services/forwarder.py` подписывается на `NewMessage` из `sources`.
+5. Новые сообщения пересылаются в `target_channel`.
 
 ## Безопасность секретов
 
