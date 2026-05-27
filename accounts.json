@@ -1,0 +1,25 @@
+{
+  "accounts": [
+    {
+      "name": "account_1",
+      "api_id_env": "API_ID_1",
+      "api_hash_env": "API_HASH_1",
+      "string_session_env": "STRING_SESSION_1",
+      "target_channel": "@channelfortestloxi",
+      "sources": [
+        -1001720026717
+      ]
+    },
+    {
+      "name": "account_2",
+      "api_id_env": "ACCOUNT_2_API_ID",
+      "api_hash_env": "ACCOUNT_2_API_HASH",
+      "string_session_env": "ACCOUNT_2_STRING_SESSION",
+      "target_channel": -1002134954545,
+      "sources": [
+        -1003211872063,
+        -1001427992105
+      ]
+    }
+  ]
+}
